@@ -5,7 +5,7 @@ import os
 import random
 
 # Environment setup
-os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
+# os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 load_dotenv()
 
