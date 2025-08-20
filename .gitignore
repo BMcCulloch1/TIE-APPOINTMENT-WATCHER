@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+.env
+
+# Virtual environment
+venv/
+ENV/
+env/
+
+# VS Code
+.vscode/
+
+# Playwright
+playwright-report/
+artifacts/
+test/auth.json
+*.har
+
+# OS files
+.DS_Store
+Thumbs.db
