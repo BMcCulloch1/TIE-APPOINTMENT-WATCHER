@@ -27,7 +27,26 @@ COUNTRY_VALUE = os.getenv("COUNTRY_VALUE").strip()
 # Run main logic
 async def run():
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False, args=["--no-sandbox"])
+        #Check for valid .env creds
+        proxy_host = os.getenv('WEBSHARE_PROXY_HOST')
+        proxy_port = os.getenv('WEBSHARE_PROXY_PORT')
+        proxy_user = os.getenv('WEBSHARE_PROXY_USER')
+        proxy_pass = os.getenv('WEBSHARE_PROXY_PASS')
+
+        if not all([proxy_host, proxy_port, proxy_user, proxy_pass]):
+            raise Exception("Missing Webshare proxy environment variables.")
+
+        # Lauch browser with proxy
+        browser = await p.chromium.launch(
+            headless=False,
+            proxy={
+                "server": f"http://{os.getenv('WEBSHARE_PROXY_HOST')}:{os.getenv('WEBSHARE_PROXY_PORT')}",
+                "username": os.getenv("WEBSHARE_PROXY_USER"),
+                "password": os.getenv("WEBSHARE_PROXY_PASS")
+            },
+            args=["--no-sandbox"]
+        )
+
 
         context = await browser.new_context(
             record_har_path=os.path.join(os.path.dirname(__file__), "..", "artifacts", "debug.har"),
