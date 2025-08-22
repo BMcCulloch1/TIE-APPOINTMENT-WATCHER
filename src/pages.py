@@ -14,11 +14,11 @@ COUNTRY_VALUE = os.getenv("COUNTRY_VALUE").strip()
 
 
 async def navigate_steps(page, nie, full_name, country_value):
-    async def jitter(min_ms=800, max_ms=2000):
+    async def jitter(min_ms=2000, max_ms=4000):
         await asyncio.sleep(random.uniform(min_ms/1000, max_ms/1000))
 
     # === STEP 1: Province Selection ===
-    await page.goto("https://icp.administracionelectronica.gob.es/icpplus/index.html", timeout=30000)
+    await page.goto("https://icp.administracionelectronica.gob.es/icpplus/index.html", timeout=60000)
     await jitter()
 
     # ✅ Hover and simulate user interaction
@@ -29,7 +29,8 @@ async def navigate_steps(page, nie, full_name, country_value):
 
     await page.select_option("select[name='form']", label="Lleida")
     await jitter()
-    await page.click("text=Aceptar")
+    await page.click("#btnAceptar")
+
 
     # === STEP 2: Office Selection ===
     await page.wait_for_selector("select[name='sede']")
@@ -40,7 +41,8 @@ async def navigate_steps(page, nie, full_name, country_value):
     # === STEP 3: Appointment Type ===
     await page.select_option("select[name='tramiteGrupo[0]']", value="4010")
     await jitter()
-    await page.click("text=Aceptar")
+    await page.click("#btnAceptar")
+
 
     # === STEP 4: Sin Cl@ve Login ===
     btn_sin_clave = page.locator("#btnEntrar")

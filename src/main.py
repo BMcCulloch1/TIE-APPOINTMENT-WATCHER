@@ -38,13 +38,16 @@ async def run():
 
         # Lauch browser with proxy
         browser = await p.chromium.launch(
-            headless=False,
+            headless=True,
             proxy={
                 "server": f"http://{os.getenv('WEBSHARE_PROXY_HOST')}:{os.getenv('WEBSHARE_PROXY_PORT')}",
                 "username": os.getenv("WEBSHARE_PROXY_USER"),
                 "password": os.getenv("WEBSHARE_PROXY_PASS")
             },
-            args=["--no-sandbox"]
+            args=[
+                "--no-sandbox",
+                #"--ignore-certificate-errors"
+                ]
         )
 
 
@@ -70,6 +73,20 @@ async def run():
         page = await context.new_page()
         await stealth_async(page)
 
+        # Debug: Confirm IP used via proxy
+        await page.goto("https://ipinfo.io/json")
+        ip_info = await page.inner_text("body")
+        print("🔍 Proxy IP Info:\n", ip_info)
+
+        # Now proceed to TIE site
+        await page.goto("https://icp.administracionelectronica.gob.es/icpplus/index.html", timeout=30000)
+
+        # Save screenshot and HTML to analyze if blocked
+        await page.screenshot(path="artifacts/landing_page.png")
+        html = await page.content()
+        with open("artifacts/landing_page.html", "w") as f:
+            f.write(html)
+            
         try:
             await navigate_steps(page, NIE, FULL_NAME, COUNTRY_VALUE)
             status = await detect_availability(page)
