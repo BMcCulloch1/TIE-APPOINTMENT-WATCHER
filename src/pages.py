@@ -21,7 +21,7 @@ async def navigate_steps(page, nie, full_name, country_value):
     await page.goto("https://icp.administracionelectronica.gob.es/icpplus/index.html", timeout=60000)
     await jitter()
 
-    # ✅ Hover and simulate user interaction
+    # Hover and simulate user interaction
     await page.hover("select[name='form']")
     await page.mouse.move(200, 200)
     await page.mouse.click(200, 200)
