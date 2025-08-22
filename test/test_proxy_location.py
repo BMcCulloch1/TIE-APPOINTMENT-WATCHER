@@ -31,7 +31,7 @@ async def run():
         print(f"IP Address: {data.get('ip')}")
         print(f"City: {data.get('city')}")
         print(f"Region: {data.get('region')}")
-        print(f"Country: {data.get('country')} 🇪🇸" if data.get("country") == "ES" else f"Country: {data.get('country')} ❌ Not Spain")
+        print(f"Country: {data.get('country')} " if data.get("country") == "ES" else f"Country: {data.get('country')} Not Spain")
 
         await browser.close()
 
