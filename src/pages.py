@@ -14,7 +14,7 @@ COUNTRY_VALUE = os.getenv("COUNTRY_VALUE").strip()
 
 
 async def navigate_steps(page, nie, full_name, country_value):
-    async def jitter(min_ms=2000, max_ms=4000):
+    async def jitter(min_ms=3000, max_ms=6000):
         await asyncio.sleep(random.uniform(min_ms/1000, max_ms/1000))
 
     # === STEP 1: Province Selection ===
@@ -30,6 +30,10 @@ async def navigate_steps(page, nie, full_name, country_value):
     await page.select_option("select[name='form']", label="Lleida")
     await jitter()
     await page.click("#btnAceptar")
+    await page.wait_for_load_state("networkidle")  # or "load"
+    print("Clicked Aceptar, waiting for 'sede' selector...")
+
+    print("Page 1 accessed and con")
 
 
     # === STEP 2: Office Selection ===
@@ -42,6 +46,8 @@ async def navigate_steps(page, nie, full_name, country_value):
     await page.select_option("select[name='tramiteGrupo[0]']", value="4010")
     await jitter()
     await page.click("#btnAceptar")
+    print("Page 2 accessed and con")
+
 
 
     # === STEP 4: Sin Cl@ve Login ===
@@ -50,6 +56,7 @@ async def navigate_steps(page, nie, full_name, country_value):
     await jitter()
     await btn_sin_clave.hover()
     await btn_sin_clave.click()
+    print("Page 3 accessed and con")
 
 
     # === STEP 5: User Details ===
@@ -69,22 +76,24 @@ async def navigate_steps(page, nie, full_name, country_value):
 
     # Acceptar
     btn_enviar = page.locator("input#btnEnviar")
-    await btn_enviar.wait_for(state="visible", timeout=10000)
+    await btn_enviar.wait_for(state="visible", timeout=30000)
     await jitter()
     await btn_enviar.hover()
     await btn_enviar.click()
+    print("Page 4 accessed and con")
 
     # === STEP 6: Solicitar Cita ===
     # Wait for the container with the Solicitar Cita buttons to appear
-    await page.wait_for_selector("div.fld.layout--abajo", timeout=10000)
+    await page.wait_for_selector("div.fld.layout--abajo", timeout=30000)
     await jitter()
 
     # Then target the second #btnEnviar (Solicitar Cita)
     btn_solicitar_cita = page.locator('//input[@id="btnEnviar" and @value="Solicitar Cita"]')
-    await btn_solicitar_cita.wait_for(state="visible", timeout=10000)
+    await btn_solicitar_cita.wait_for(state="visible", timeout=30000)
     await jitter()
     await btn_solicitar_cita.hover()
     await btn_solicitar_cita.click()
+    print("Made it to final page")
 
 
 

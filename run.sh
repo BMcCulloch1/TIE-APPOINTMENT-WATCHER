@@ -11,7 +11,8 @@ else
     source venv/bin/activate
 fi
 
-python3 src/main.py
+xvfb-run -a python3 src/main.py
+
 
 
 

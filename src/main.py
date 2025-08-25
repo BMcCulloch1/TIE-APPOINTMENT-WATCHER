@@ -3,12 +3,13 @@ from dotenv import load_dotenv
 import sys
 import os
 import random
+import json
+from datetime import datetime
 
 # Environment setup
 # os.environ["PLAYWRIGHT_BROWSERS_PATH"] = "0"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 load_dotenv()
-
 
 from src.pages import navigate_steps
 from src.detect import detect_availability
@@ -16,8 +17,6 @@ from src.notify import send_telegram_alert
 from src.storage import is_cooldown_active, save_alert_time
 from playwright.async_api import async_playwright
 from src.utils.stealth import stealth_async
-
-
 
 # Load user data
 NIE = os.getenv("NIE").strip()
@@ -27,7 +26,7 @@ COUNTRY_VALUE = os.getenv("COUNTRY_VALUE").strip()
 # Run main logic
 async def run():
     async with async_playwright() as p:
-        #Check for valid .env creds
+        # Check for valid .env creds
         proxy_host = os.getenv('WEBSHARE_PROXY_HOST')
         proxy_port = os.getenv('WEBSHARE_PROXY_PORT')
         proxy_user = os.getenv('WEBSHARE_PROXY_USER')
@@ -36,20 +35,16 @@ async def run():
         if not all([proxy_host, proxy_port, proxy_user, proxy_pass]):
             raise Exception("Missing Webshare proxy environment variables.")
 
-        # Lauch browser with proxy
+        # Launch browser with proxy
         browser = await p.chromium.launch(
-            headless=True,
+            headless=False,
             proxy={
-                "server": f"http://{os.getenv('WEBSHARE_PROXY_HOST')}:{os.getenv('WEBSHARE_PROXY_PORT')}",
-                "username": os.getenv("WEBSHARE_PROXY_USER"),
-                "password": os.getenv("WEBSHARE_PROXY_PASS")
+                "server": f"http://{proxy_host}:{proxy_port}",
+                "username": proxy_user,
+                "password": proxy_pass
             },
-            args=[
-                "--no-sandbox",
-                #"--ignore-certificate-errors"
-                ]
+            args=["--no-sandbox"]
         )
-
 
         context = await browser.new_context(
             record_har_path=os.path.join(os.path.dirname(__file__), "..", "artifacts", "debug.har"),
@@ -75,35 +70,54 @@ async def run():
 
         # Debug: Confirm IP used via proxy
         await page.goto("https://ipinfo.io/json")
-        ip_info = await page.inner_text("body")
+        ip_info_raw = await page.inner_text("body")
+        ip_info = json.loads(ip_info_raw)
         print("🔍 Proxy IP Info:\n", ip_info)
 
         # Now proceed to TIE site
         await page.goto("https://icp.administracionelectronica.gob.es/icpplus/index.html", timeout=30000)
 
-        # Save screenshot and HTML to analyze if blocked
+        # Save initial screenshot and HTML
         await page.screenshot(path="artifacts/landing_page.png")
         html = await page.content()
         with open("artifacts/landing_page.html", "w") as f:
             f.write(html)
-            
+
         try:
             await navigate_steps(page, NIE, FULL_NAME, COUNTRY_VALUE)
             status = await detect_availability(page)
 
             if status == "available" and not is_cooldown_active(30):
+                # Save evidence
+                await page.screenshot(path="artifacts/result.png")
+                html = await page.content()
+                with open("artifacts/result.html", "w") as f:
+                    f.write(html)
+
+                # Compose alert message
+                message = (
+                    f"<b>🟢 TIE appointment detected</b>\n"
+                    f"<b>Name:</b> {FULL_NAME}\n"
+                    f"<b>NIE:</b> {NIE}\n"
+                    f"<b>Proxy IP:</b> {ip_info.get('ip')} ({ip_info.get('city')})\n"
+                    f"<b>Time:</b> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+
+                # Send alert
                 await send_telegram_alert(
-                    f"<b>TIE appointment detected</b> for {FULL_NAME} - {NIE}",
+                    message,
                     html_path="artifacts/result.html",
                     img_path="artifacts/result.png"
                 )
                 save_alert_time()
+
             elif status == "none":
                 print("No appointments available.")
             elif status == "expired":
                 print("Session expired or blocked.")
+
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"❌ Error: {e}")
         finally:
             await context.close()
             await browser.close()
